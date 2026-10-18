@@ -4,7 +4,7 @@
 #include <map>
 #include <optional>
 
-using Price = double;
+using Price = int;
 using Quantity = int;
 using Id = int;
 
@@ -14,10 +14,10 @@ enum class Side {
 };
 
 struct Order {
-  Side side;
   Price price;
   Quantity quantity;
   Id id;
+  Side side;
 };
 
 using OrderQueue = std::list<Order>;

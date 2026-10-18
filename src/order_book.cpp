@@ -3,7 +3,6 @@
 #include <print>
 
 void OrderBook::add_order(const Order &order) {
-  std::println("received order_id: {}", order.id);
   if (order.side == Side::Buy) {
     bids[order.price].orders.push_back(order);
     bids[order.price].total_quantity += order.quantity;
@@ -30,44 +29,24 @@ std::optional<Price> OrderBook::best_ask() {
 }
 
 void OrderBook::submit_order(Order order) {
-  if (order.side == Side::Buy) {
-    while (order.quantity > 0) {
-      auto ask_price_opt = best_ask();
-      if (!ask_price_opt) {
-        break;
-      }
-      Price ask_price = *ask_price_opt;
-      if (ask_price > order.price) {
-        break;
-      }
-      PriceLevel &level = asks[ask_price];
-      match_price_level(order, level);
-      if (level.orders.empty()) {
-        asks.erase(ask_price);
-      }
+  auto &opposing_levels = order.side == Side::Buy ? asks : bids;
+  while (order.quantity > 0) {
+    auto best_opt = order.side == Side::Buy ? best_ask() : best_bid();
+    if (!best_opt) {
+      break;
     }
-    if (order.quantity > 0) {
-      add_order(order);
+    Price price = *best_opt;
+    if (price > order.price) {
+      break;
     }
-  } else {
-    while (order.quantity > 0) {
-      auto buy_price_opt = best_bid();
-      if (!buy_price_opt) {
-        break;
-      }
-      Price buy_price = *buy_price_opt;
-      if (buy_price < order.price) {
-        break;
-      }
-      PriceLevel &level = bids[buy_price];
-      match_price_level(order, level);
-      if (level.orders.empty()) {
-        bids.erase(buy_price);
-      }
+    PriceLevel &level = opposing_levels[price];
+    match_price_level(order, level);
+    if (level.orders.empty()) {
+      asks.erase(price);
     }
-    if (order.quantity > 0) {
-      add_order(order);
-    }
+  }
+  if (order.quantity > 0) {
+    add_order(order);
   }
 }
 
